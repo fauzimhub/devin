@@ -79,11 +79,13 @@ fn menuState(io: std.Io, allocator: std.mem.Allocator) !void {
 const CAction = enum(u8) {
     InitTidyConfig = 0,
     InitFormatConfig,
+    InitCMake,
 
     pub fn toString(self: CAction) []const u8 {
         return switch (self) {
             .InitTidyConfig => "Initialize .clang-tidy config",
             .InitFormatConfig => "Initialize .clang-format config",
+            .InitCMake => "Initialize CMakeLists.txt",
         };
     }
 };
@@ -99,8 +101,92 @@ fn cState(io: std.Io, allocator: std.mem.Allocator) !void {
         switch (s) {
             .InitTidyConfig => try initTidyConfig(io),
             .InitFormatConfig => try initFormatConfig(io),
+            .InitCMake => try initCMake(io),
         }
     }
+}
+
+fn initCMake(io: std.Io) !void {
+    const name = "CMakeLists.txt";
+    try stdout.writeStreamingAll(io, "\x1b[H\x1b[2J");
+    try stdout.writeStreamingAll(io, "Initialize " ++ name ++ " file in current directory...\n\n");
+
+    if (!try shouldWriteFile(io, name)) return;
+
+    try stdout.writeStreamingAll(io, "Should we make CMakeLists.txt C or C++?\n\n");
+    try stdout.writeStreamingAll(io, "1. C\n");
+    try stdout.writeStreamingAll(io, "2. C++\n\n");
+
+    var num: u8 = undefined;
+    while (true) {
+        var buf: [1]u8 = undefined;
+        const bytes_read = try stdin.readStreaming(io, &.{&buf});
+        const str = buf[0..bytes_read];
+
+        num = std.fmt.parseUnsigned(u8, str, 10) catch {
+            continue;
+        };
+        if (num == 1 or num == 2) {
+            break;
+        } else {}
+    }
+
+    var path_buf: [std.fs.max_path_bytes]u8 = undefined;
+    const absolute_path = try getCurrentDirAbsolutePath(io, &path_buf);
+    const project_name = std.fs.path.basename(absolute_path);
+
+    var print_buf: [2048]u8 = undefined;
+    var text: []const u8 = undefined;
+    if (num == 1) {
+        text = try std.fmt.bufPrint(
+            &print_buf,
+            \\cmake_minimum_required(VERSION 3.20)
+            \\project({s})
+            \\set(CMAKE_C_STANDARD 99)
+            \\set(CMAKE_CXX_STANDARD_REQUIRED ON)
+            \\set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+            \\add_executable(${{PROJECT_NAME}}
+            \\    src/main.c)
+            \\target_compile_options(${{PROJECT_NAME}} PRIVATE
+            \\    -g
+            \\    -pedantic
+            \\    -Wall
+            \\    -Wextra
+            \\    -Wconversion
+            \\    -Wsign-conversion)
+            \\
+        ,
+            .{project_name},
+        );
+    } else if (num == 2) {
+        text = try std.fmt.bufPrint(
+            &print_buf,
+            \\cmake_minimum_required(VERSION 3.20)
+            \\project({s})
+            \\set(CMAKE_CXX_STANDARD 17)
+            \\set(CMAKE_CXX_STANDARD_REQUIRED ON)
+            \\set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+            \\add_executable(${{PROJECT_NAME}}
+            \\    src/main.cpp)
+            \\target_compile_options(${{PROJECT_NAME}} PRIVATE
+            \\    -g
+            \\    -pedantic
+            \\    -Wall
+            \\    -Weffc++
+            \\    -Wextra
+            \\    -Wconversion
+            \\    -Wsign-conversion)
+            \\
+        ,
+            .{project_name},
+        );
+    }
+
+    try createFileInSubPath(io, name, text);
+
+    try stdout.writeStreamingAll(io, name ++ " generated in ");
+    try stdout.writeStreamingAll(io, absolute_path);
+    try stdout.writeStreamingAll(io, "\n");
 }
 
 fn shouldWriteFile(io: std.Io, path: []const u8) !bool {
