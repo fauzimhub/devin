@@ -157,6 +157,36 @@ fn createFileInSubPath(io: std.Io, sub_path: []const u8, text: []const u8) !void
     return;
 }
 
+fn initTidyConfig(io: std.Io) !void {
+    const name = ".clang-tidy";
+    try stdout.writeStreamingAll(io, "\x1b[H\x1b[2J");
+    try stdout.writeStreamingAll(io, "Initialize " ++ name ++ " file in current directory...\n\n");
+
+    if (!try shouldWriteFile(io, name)) return;
+
+    var path_buf: [std.fs.max_path_bytes]u8 = undefined;
+    const absolute_path = try getCurrentDirAbsolutePath(io, &path_buf);
+
+    var print_buf: [256]u8 = undefined;
+
+    const text = try std.fmt.bufPrint(
+        &print_buf,
+        \\Checks: "bugprone-*,modernize-*,readability-*,performance-*,portability-*,clang-analyzer-*,-modernize-use-trailing-return-type"
+        \\WarningsAsErrors: ""
+        \\HeaderFilterRegex: "{s}/src/.*"
+        \\FormatStyle: none
+        \\
+    ,
+        .{absolute_path},
+    );
+
+    try createFileInSubPath(io, name, text);
+
+    try stdout.writeStreamingAll(io, name ++ " generated in ");
+    try stdout.writeStreamingAll(io, absolute_path);
+    try stdout.writeStreamingAll(io, "\n");
+}
+
 fn fzfMultiSelectEnum(comptime T: type, io: std.Io, allocator: std.mem.Allocator) !std.ArrayList(T) {
     const options = std.meta.fieldNames(T);
     const input = try std.mem.join(allocator, "\n", options);
