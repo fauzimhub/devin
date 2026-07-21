@@ -80,12 +80,14 @@ const CAction = enum(u8) {
     InitTidyConfig = 0,
     InitFormatConfig,
     InitCMake,
+    InitDoxyfile,
 
     pub fn toString(self: CAction) []const u8 {
         return switch (self) {
             .InitTidyConfig => "Initialize .clang-tidy config",
             .InitFormatConfig => "Initialize .clang-format config",
             .InitCMake => "Initialize CMakeLists.txt",
+            .InitDoxyfile => "Initialize Doxyfile",
         };
     }
 };
@@ -102,6 +104,7 @@ fn cState(io: std.Io, allocator: std.mem.Allocator) !void {
             .InitTidyConfig => try initTidyConfig(io),
             .InitFormatConfig => try initFormatConfig(io),
             .InitCMake => try initCMake(io),
+            .InitDoxyfile => try initDoxyfile(io),
         }
     }
 }
@@ -244,6 +247,39 @@ fn createFileInSubPath(io: std.Io, sub_path: []const u8, text: []const u8) !void
     try writer.flush();
 
     return;
+}
+
+fn initDoxyfile(io: std.Io) !void {
+    const name = "Doxyfile";
+    try stdout.writeStreamingAll(io, "\x1b[H\x1b[2J");
+    try stdout.writeStreamingAll(io, "Initialize " ++ name ++ " file in current directory...\n\n");
+
+    if (!try shouldWriteFile(io, name)) return;
+
+    var path_buf: [std.fs.max_path_bytes]u8 = undefined;
+    const absolute_path = try getCurrentDirAbsolutePath(io, &path_buf);
+    const project_name = std.fs.path.basename(absolute_path);
+
+    var print_buf: [1024]u8 = undefined;
+    const text = try std.fmt.bufPrint(
+        &print_buf,
+        \\PROJECT_NAME           = "{s}"
+        \\OUTPUT_DIRECTORY       = docs
+        \\INPUT                  = src
+        \\RECURSIVE              = YES
+        \\EXTRACT_ALL            = YES
+        \\GENERATE_LATEX         = NO
+        \\GENERATE_HTML          = YES
+        \\
+    ,
+        .{project_name},
+    );
+
+    try createFileInSubPath(io, name, text);
+
+    try stdout.writeStreamingAll(io, name ++ " generated in ");
+    try stdout.writeStreamingAll(io, absolute_path);
+    try stdout.writeStreamingAll(io, "\n");
 }
 
 fn initTidyConfig(io: std.Io) !void {
