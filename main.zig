@@ -187,6 +187,113 @@ fn initTidyConfig(io: std.Io) !void {
     try stdout.writeStreamingAll(io, "\n");
 }
 
+fn initFormatConfig(io: std.Io) !void {
+    const name = ".clang-format";
+    try stdout.writeStreamingAll(io, "\x1b[H\x1b[2J");
+    try stdout.writeStreamingAll(io, "Initialize " ++ name ++ " file in current directory...\n\n");
+
+    if (!try shouldWriteFile(io, name)) return;
+
+    var path_buf: [std.fs.max_path_bytes]u8 = undefined;
+    const absolute_path = try getCurrentDirAbsolutePath(io, &path_buf);
+
+    var print_buf: [4096]u8 = undefined;
+    const text = try std.fmt.bufPrint(
+        &print_buf,
+        \\# Google C/C++ Code Style settings
+        \\# https://clang.llvm.org/docs/ClangFormatStyleOptions.html
+        \\# Author: Kehan Xue, kehan.xue (at) gmail.com
+        \\Language: Cpp
+        \\BasedOnStyle: Google
+        \\AccessModifierOffset: -1
+        \\AlignAfterOpenBracket: Align
+        \\AlignConsecutiveAssignments: None
+        \\AlignOperands: Align
+        \\AllowAllArgumentsOnNextLine: true
+        \\AllowAllConstructorInitializersOnNextLine: true
+        \\AllowAllParametersOfDeclarationOnNextLine: false
+        \\AllowShortBlocksOnASingleLine: Empty
+        \\AllowShortCaseLabelsOnASingleLine: false
+        \\AllowShortFunctionsOnASingleLine: Inline
+        \\AllowShortIfStatementsOnASingleLine: Never
+        \\AllowShortLambdasOnASingleLine: Inline
+        \\AllowShortLoopsOnASingleLine: false
+        \\AlwaysBreakAfterReturnType: None
+        \\AlwaysBreakTemplateDeclarations: Yes
+        \\BinPackArguments: true
+        \\BreakBeforeBraces: Custom
+        \\BraceWrapping:
+        \\  AfterCaseLabel: false
+        \\  AfterClass: false
+        \\  AfterStruct: false
+        \\  AfterControlStatement: Never
+        \\  AfterEnum: false
+        \\  AfterFunction: false
+        \\  AfterNamespace: false
+        \\  AfterUnion: false
+        \\  AfterExternBlock: false
+        \\  BeforeCatch: false
+        \\  BeforeElse: false
+        \\  BeforeLambdaBody: false
+        \\  IndentBraces: false
+        \\  SplitEmptyFunction: false
+        \\  SplitEmptyRecord: false
+        \\  SplitEmptyNamespace: false
+        \\BreakBeforeBinaryOperators: None
+        \\BreakBeforeTernaryOperators: true
+        \\BreakConstructorInitializers: BeforeColon
+        \\BreakInheritanceList: BeforeColon
+        \\ColumnLimit: 80
+        \\CompactNamespaces: false
+        \\ContinuationIndentWidth: 4
+        \\Cpp11BracedListStyle: true
+        \\DerivePointerAlignment: false
+        \\EmptyLineBeforeAccessModifier: LogicalBlock
+        \\FixNamespaceComments: true
+        \\IncludeBlocks: Preserve
+        \\IndentCaseLabels: true
+        \\IndentPPDirectives: None
+        \\IndentWidth: 2
+        \\KeepEmptyLinesAtTheStartOfBlocks: true
+        \\MaxEmptyLinesToKeep: 1
+        \\NamespaceIndentation: None
+        \\ObjCSpaceAfterProperty: false
+        \\ObjCSpaceBeforeProtocolList: true
+        \\PointerAlignment: Left
+        \\ReflowComments: false
+        \\SeparateDefinitionBlocks: Always
+        \\SpaceAfterCStyleCast: false
+        \\SpaceAfterLogicalNot: false
+        \\SpaceAfterTemplateKeyword: true
+        \\SpaceBeforeAssignmentOperators: true
+        \\SpaceBeforeCpp11BracedList: false
+        \\SpaceBeforeCtorInitializerColon: true
+        \\SpaceBeforeInheritanceColon: true
+        \\SpaceBeforeParens: ControlStatements
+        \\SpaceBeforeRangeBasedForLoopColon: true
+        \\SpaceBeforeSquareBrackets: false
+        \\SpaceInEmptyParentheses: false
+        \\SpacesBeforeTrailingComments: 2
+        \\SpacesInAngles: false
+        \\SpacesInCStyleCastParentheses: false
+        \\SpacesInContainerLiterals: false
+        \\SpacesInParentheses: false
+        \\SpacesInSquareBrackets: false
+        \\Standard: c++11
+        \\TabWidth: 4
+        \\UseTab: Never
+        \\
+    ,
+        .{},
+    );
+
+    try createFileInSubPath(io, name, text);
+
+    try stdout.writeStreamingAll(io, name ++ " generated in ");
+    try stdout.writeStreamingAll(io, absolute_path);
+    try stdout.writeStreamingAll(io, "\n");
+}
+
 fn fzfMultiSelectEnum(comptime T: type, io: std.Io, allocator: std.mem.Allocator) !std.ArrayList(T) {
     const options = std.meta.fieldNames(T);
     const input = try std.mem.join(allocator, "\n", options);
