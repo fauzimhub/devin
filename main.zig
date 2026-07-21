@@ -2,6 +2,7 @@ const std = @import("std");
 const posix = std.posix;
 const stdout = std.Io.File.stdout();
 const stdin = std.Io.File.stdin();
+const cwd = std.Io.Dir.cwd();
 
 const State = enum(u8) {
     Menu = 0,
@@ -97,6 +98,35 @@ fn cState(io: std.Io, allocator: std.mem.Allocator) !void {
     for (selected.items) |s| {
         std.debug.print("selected {}\n", .{s});
     }
+}
+
+fn shouldWriteFile(io: std.Io, path: []const u8) !bool {
+    var fileExist = true;
+    cwd.access(io, path, .{}) catch |err| {
+        if (err == error.FileNotFound) {
+            fileExist = false;
+        }
+    };
+
+    if (fileExist) {
+        try stdout.writeStreamingAll(io, path);
+        try stdout.writeStreamingAll(io, " file already exist in current directory, overwrite it? [y/N]\n\n");
+        while (true) {
+            var buf: [1]u8 = undefined;
+            const bytes_read = try stdin.readStreaming(io, &.{&buf});
+            const str = buf[0..bytes_read];
+            const proceed = std.mem.eql(u8, str, "y") or
+                std.mem.eql(u8, str, "Y");
+            const abort = std.mem.eql(u8, str, "n") or
+                std.mem.eql(u8, str, "N") or
+                std.mem.eql(u8, str, "\n");
+            if (proceed) return true;
+            if (abort) {
+                return false;
+            }
+        }
+    }
+    return true;
 }
 
 fn fzfMultiSelectEnum(comptime T: type, io: std.Io, allocator: std.mem.Allocator) !std.ArrayList(T) {
