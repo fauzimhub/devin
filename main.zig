@@ -192,15 +192,17 @@ fn initCMake(io: std.Io) !void {
     try stdout.writeStreamingAll(io, "\n");
 }
 
-fn shouldWriteFile(io: std.Io, path: []const u8) !bool {
-    var fileExist = true;
+fn isFileExist(io: std.Io, path: []const u8) bool {
+    var exist = true;
     cwd.access(io, path, .{}) catch |err| {
         if (err == error.FileNotFound) {
-            fileExist = false;
+            exist = false;
         }
     };
-
-    if (fileExist) {
+    return exist;
+}
+fn shouldWriteFile(io: std.Io, path: []const u8) !bool {
+    if (isFileExist(io, path)) {
         try stdout.writeStreamingAll(io, path);
         try stdout.writeStreamingAll(io, " file already exist in current directory, overwrite it? [y/N]\n\n");
         while (true) {
