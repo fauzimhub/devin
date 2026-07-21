@@ -129,6 +129,17 @@ fn shouldWriteFile(io: std.Io, path: []const u8) !bool {
     return true;
 }
 
+fn getCurrentDirAbsolutePath(io: std.Io, path_buf: *[std.fs.max_path_bytes]u8) ![]const u8 {
+    var absolute_path: []const u8 = undefined;
+    if (cwd.realPathFile(io, ".", path_buf)) |path_len| {
+        absolute_path = path_buf[0..path_len];
+    } else |err| {
+        std.log.err("Failed to get current directory: {any}\n", .{err});
+        return error.FailedToGetCurrentDir;
+    }
+    return absolute_path;
+}
+
 fn fzfMultiSelectEnum(comptime T: type, io: std.Io, allocator: std.mem.Allocator) !std.ArrayList(T) {
     const options = std.meta.fieldNames(T);
     const input = try std.mem.join(allocator, "\n", options);
