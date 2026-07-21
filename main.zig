@@ -6,7 +6,10 @@ const cwd = std.Io.Dir.cwd();
 
 const State = enum(u8) {
     Menu = 0,
-    C,
+};
+
+const MenuState = enum(u8) {
+    C = 0,
 };
 
 var state: State = undefined;
@@ -31,12 +34,13 @@ pub fn main(init: std.process.Init) !void {
     );
 
     switch (state) {
-        .Menu => try menuState(io, arena),
-        else => unreachable,
+        .Menu => try menuState(io, gpa),
+        // else => unreachable,
     }
 }
 
 fn menuState(io: std.Io, allocator: std.mem.Allocator) !void {
+    var menu_state: MenuState = undefined;
     const original_settings = posix.tcgetattr(0) catch |err| {
         std.log.err("{}", .{err});
         return;
@@ -63,16 +67,16 @@ fn menuState(io: std.Io, allocator: std.mem.Allocator) !void {
         const num = std.fmt.parseUnsigned(u32, str, 10) catch {
             continue;
         };
-        const state_len = std.meta.fieldNames(State).len;
-        if (num != 0 and num <= state_len - 1) {
-            state = @enumFromInt(num);
+        const menu_state_len = std.meta.fieldNames(MenuState).len;
+        if (num != 0 and num - 1 < menu_state_len) {
+            menu_state = @enumFromInt(num - 1);
             break;
         } else {}
     }
 
-    switch (state) {
+    switch (menu_state) {
         .C => try cState(io, allocator),
-        else => unreachable,
+        // else => unreachable,
     }
 }
 
