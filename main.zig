@@ -444,14 +444,17 @@ fn fzfMultiSelectEnum(comptime T: type, io: std.Io, allocator: std.mem.Allocator
     child.stdin.?.close(io);
     child.stdin = null;
 
-    var buf: [256]u8 = undefined;
-    const n = try child.stdout.?.readStreaming(io, &.{&buf});
-    const output_str = std.mem.trimEnd(u8, buf[0..n], "\n");
-    std.debug.assert(output_str.len != 0);
-
-    var it = std.mem.tokenizeScalar(u8, output_str, '\n');
-
     var values: std.ArrayList(T) = try .initCapacity(allocator, options.len);
+
+    var buf: [256]u8 = undefined;
+    const n = child.stdout.?.readStreaming(io, &.{&buf}) catch |err|
+        switch (err) {
+            error.EndOfStream => 0,
+            else => return err,
+        };
+
+    const output_str = std.mem.trimEnd(u8, buf[0..n], "\n");
+    var it = std.mem.tokenizeScalar(u8, output_str, '\n');
 
     while (it.next()) |line| {
         try values.append(allocator, std.meta.stringToEnum(T, line).?);
