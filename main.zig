@@ -140,6 +140,23 @@ fn getCurrentDirAbsolutePath(io: std.Io, path_buf: *[std.fs.max_path_bytes]u8) !
     return absolute_path;
 }
 
+fn createFileInSubPath(io: std.Io, sub_path: []const u8, text: []const u8) !void {
+    const file = try cwd.createFile(io, sub_path, .{
+        .read = true,
+        .permissions = std.Io.File.Permissions.fromMode(0o644),
+        .truncate = true,
+    });
+    defer file.close(io);
+
+    var buffer: [256]u8 = undefined;
+    var file_writer = file.writer(io, &buffer);
+    const writer = &file_writer.interface;
+    try writer.writeAll(text);
+    try writer.flush();
+
+    return;
+}
+
 fn fzfMultiSelectEnum(comptime T: type, io: std.Io, allocator: std.mem.Allocator) !std.ArrayList(T) {
     const options = std.meta.fieldNames(T);
     const input = try std.mem.join(allocator, "\n", options);
