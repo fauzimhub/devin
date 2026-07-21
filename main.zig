@@ -96,7 +96,10 @@ fn cState(io: std.Io, allocator: std.mem.Allocator) !void {
     defer selected.deinit(allocator);
 
     for (selected.items) |s| {
-        std.debug.print("selected {}\n", .{s});
+        switch (s) {
+            .InitTidyConfig => try initTidyConfig(io),
+            .InitFormatConfig => try initFormatConfig(io),
+        }
     }
 }
 
