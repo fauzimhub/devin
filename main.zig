@@ -137,6 +137,37 @@ fn cState(io: std.Io, allocator: std.mem.Allocator) !void {
     var selected = try fzfMultiSelectEnum(CAction, io, allocator);
     defer selected.deinit(allocator);
 
+    if (selected.items.len == 0) {
+        try stdout.writeStreamingAll(io, "No actions selected, exiting.\n");
+        return;
+    }
+
+    try stdout.writeStreamingAll(io, "\x1b[H\x1b[2J");
+    try stdout.writeStreamingAll(io, "You selected:\n\n");
+    for (selected.items) |s| {
+        try stdout.writeStreamingAll(io, "  - ");
+        try stdout.writeStreamingAll(io, s.toString());
+        try stdout.writeStreamingAll(io, "\n");
+    }
+    try stdout.writeStreamingAll(io, "\nProceed? [y/N]\n");
+
+    while (true) {
+        var buf: [1]u8 = undefined;
+        const bytes_read = try stdin.readStreaming(io, &.{&buf});
+        const str = buf[0..bytes_read];
+        const proceed = std.mem.eql(u8, str, "y") or
+            std.mem.eql(u8, str, "Y");
+        const abort = std.mem.eql(u8, str, "n") or
+            std.mem.eql(u8, str, "N") or
+            std.mem.eql(u8, str, "\n") or
+            std.mem.eql(u8, str, "\x1b");
+        if (proceed) break;
+        if (abort) {
+            try stdout.writeStreamingAll(io, "Cancelled.\n");
+            return;
+        }
+    }
+
     for (selected.items) |s| {
         switch (s) {
             .InitTidyConfig => try initTidyConfig(io),
