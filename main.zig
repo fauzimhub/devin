@@ -148,14 +148,23 @@ fn initCMake(io: std.Io) !void {
         text = try std.fmt.bufPrint(
             &print_buf,
             \\cmake_minimum_required(VERSION 3.20)
-            \\project({s})
+            \\project({s} LANGUAGES C)
             \\set(CMAKE_C_STANDARD 99)
-            \\set(CMAKE_CXX_STANDARD_REQUIRED ON)
+            \\set(CMAKE_C_STANDARD_REQUIRED ON)
             \\set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+            \\set(CMAKE_CONFIGURATION_TYPES
+            \\Debug ReleaseFast ReleaseSafe ReleaseSmall
+            \\    CACHE STRING "Available build types" FORCE)
+            \\if(NOT CMAKE_BUILD_TYPE)
+            \\    set(CMAKE_BUILD_TYPE Debug)
+            \\endif()
+            \\set(CMAKE_C_FLAGS_DEBUG   "-O0 -g")
+            \\set(CMAKE_C_FLAGS_RELEASEFAST   "-O3 -s -DNDEBUG")
+            \\set(CMAKE_C_FLAGS_RELEASESAFE  "-O2 -DNDEBUG -D_FORTIFY_SOURCE=2 -fstack-protector-strong -fstack-clash-protection")
+            \\set(CMAKE_C_FLAGS_RELEASESMALL    "-Os -s -DNDEBUG")
             \\add_executable(${{PROJECT_NAME}}
             \\    src/main.c)
             \\target_compile_options(${{PROJECT_NAME}} PRIVATE
-            \\    -g
             \\    -pedantic
             \\    -Wall
             \\    -Wextra
@@ -169,14 +178,23 @@ fn initCMake(io: std.Io) !void {
         text = try std.fmt.bufPrint(
             &print_buf,
             \\cmake_minimum_required(VERSION 3.20)
-            \\project({s})
+            \\project({s} LANGUAGES CXX)
             \\set(CMAKE_CXX_STANDARD 17)
             \\set(CMAKE_CXX_STANDARD_REQUIRED ON)
             \\set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+            \\set(CMAKE_CONFIGURATION_TYPES
+            \\Debug ReleaseFast ReleaseSafe ReleaseSmall
+            \\    CACHE STRING "Available build types" FORCE)
+            \\if(NOT CMAKE_BUILD_TYPE)
+            \\    set(CMAKE_BUILD_TYPE Debug)
+            \\endif()
+            \\set(CMAKE_CXX_FLAGS_DEBUG   "-O0 -g")
+            \\set(CMAKE_CXX_FLAGS_RELEASEFAST   "-O3 -s -DNDEBUG")
+            \\set(CMAKE_CXX_FLAGS_RELEASESAFE  "-O2 -DNDEBUG -D_FORTIFY_SOURCE=2 -fstack-protector-strong -fstack-clash-protection")
+            \\set(CMAKE_CXX_FLAGS_RELEASESMALL    "-Os -s -DNDEBUG")
             \\add_executable(${{PROJECT_NAME}}
             \\    src/main.cpp)
             \\target_compile_options(${{PROJECT_NAME}} PRIVATE
-            \\    -g
             \\    -pedantic
             \\    -Wall
             \\    -Weffc++
