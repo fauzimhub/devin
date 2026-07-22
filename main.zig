@@ -6,6 +6,8 @@ const cwd = std.Io.Dir.cwd();
 
 const State = enum(u8) {
     Menu = 0,
+    Make,
+    Tidy,
 };
 
 const MenuState = enum(u8) {
@@ -15,12 +17,17 @@ const MenuState = enum(u8) {
 var state: State = undefined;
 
 pub fn main(init: std.process.Init) !void {
+    const gpa = init.gpa;
     const arena = init.arena.allocator();
     const args = try init.minimal.args.toSlice(arena);
     std.debug.assert(@intFromEnum(State.Menu) == 0 and
         @intFromEnum(State.C) == 1);
 
     if (args.len == 1) {
+        state = .Menu;
+    } else if (args.len == 2 and std.mem.eql(u8, args[1], "make")) {
+        state = .Make;
+    } else {
         state = .Menu;
     }
 
@@ -35,8 +42,35 @@ pub fn main(init: std.process.Init) !void {
 
     switch (state) {
         .Menu => try menuState(io, gpa),
-        // else => unreachable,
+        .Make => try makeState(io, gpa),
+        else => return,
     }
+}
+
+fn makeState(io: std.Io, allocator: std.mem.Allocator) !void {
+    const argv = &.{ "cmake", "-G", "Ninja", "-S", ".", "-B", "build" };
+    try stdout.writeStreamingAll(io, "Executing CMake using Ninja as build system generator, placing all generated files into build/ directory...\n\n");
+    const cmd_str = try std.mem.join(allocator, " ", argv);
+    try stdout.writeStreamingAll(io, cmd_str);
+    try stdout.writeStreamingAll(io, "\n\n");
+
+    var child = try std.process.spawn(io, .{
+        .argv = argv,
+    });
+    defer allocator.free(cmd_str);
+
+    const term = try child.wait(io);
+    switch (term) {
+        .exited => |code| {
+            if (code != 0) {
+                try stdout.writeStreamingAll(io, "CMake failed.\n");
+                return error.CmakeFailed;
+            }
+        },
+        else => return error.CmakeTerminatedAbnormally,
+    }
+
+    try stdout.writeStreamingAll(io, "\nCMake succeeded.\n");
 }
 
 fn menuState(io: std.Io, allocator: std.mem.Allocator) !void {
