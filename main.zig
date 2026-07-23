@@ -11,6 +11,12 @@ const State = enum(i8) {
     Tidy,
 };
 
+const state_map = std.StaticStringMap(State).initComptime(.{
+    .{ "menu", .Menu },
+    .{ "make", .Make },
+    .{ "tidy", .Tidy },
+});
+
 const MenuState = enum(u8) {
     C = 0,
 };
