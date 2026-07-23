@@ -21,7 +21,6 @@ const MenuState = enum(u8) {
     C = 0,
 };
 
-var state: State = undefined;
 const BuildMode = enum(i8) {
     Invalid = -2,
     Unset,
@@ -59,6 +58,7 @@ const buildmode_map = std.StaticStringMap(BuildMode).initComptime(.{
     .{ "fast", .ReleaseFast },
 });
 
+var state: State = .NoState;
 
 pub fn main(init: std.process.Init) !void {
     const gpa = init.gpa;
