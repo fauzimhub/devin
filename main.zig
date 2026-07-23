@@ -22,6 +22,36 @@ const MenuState = enum(u8) {
 };
 
 var state: State = undefined;
+const BuildMode = enum(i8) {
+    Invalid = -2,
+    Unset,
+    All,
+    Debug,
+    ReleaseSafe,
+    ReleaseSmall,
+    ReleaseFast,
+
+    pub fn buildDir(self: BuildMode) []const u8 {
+        return switch (self) {
+            .Debug => "build",
+            .ReleaseSafe => "build-safe",
+            .ReleaseSmall => "build-small",
+            .ReleaseFast => "build-fast",
+            else => "",
+        };
+    }
+
+    pub fn flags(self: BuildMode) []const u8 {
+        return switch (self) {
+            .Debug => "-DCMAKE_BUILD_TYPE=Debug",
+            .ReleaseSafe => "-DCMAKE_BUILD_TYPE=ReleaseSafe",
+            .ReleaseSmall => "-DCMAKE_BUILD_TYPE=ReleaseSmall",
+            .ReleaseFast => "-DCMAKE_BUILD_TYPE=Fast",
+            else => "",
+        };
+    }
+};
+
 
 pub fn main(init: std.process.Init) !void {
     const gpa = init.gpa;
