@@ -80,14 +80,6 @@ pub fn main(init: std.process.Init) !void {
         return;
     }
 
-
-    try stdout.writeStreamingAll(io, "\x1b[H\x1b[2J");
-    try stdout.writeStreamingAll(io, "Welcome to Devin!\n");
-    try stdout.writeStreamingAll(
-        io,
-        "Devin is development utility to initialize a project for linux\n\n",
-    );
-
     switch (state) {
         .Menu => try menuState(io, gpa),
         .Make => {
@@ -158,6 +150,12 @@ fn menuState(io: std.Io, allocator: std.mem.Allocator) !void {
 
     defer posix.tcsetattr(0, .NOW, original_settings) catch unreachable;
 
+    try stdout.writeStreamingAll(io, "\x1b[H\x1b[2J");
+    try stdout.writeStreamingAll(io, "Welcome to Devin!\n");
+    try stdout.writeStreamingAll(
+        io,
+        "Devin is development utility to initialize a project for linux\n\n",
+    );
     try stdout.writeStreamingAll(io, "Choose which project to initialize:\n\n");
     try stdout.writeStreamingAll(io, "1. C/C++ Project\n");
     try stdout.writeStreamingAll(io, "\nPress appropiate number to select...\n");
