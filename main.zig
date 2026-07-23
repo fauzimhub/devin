@@ -70,13 +70,16 @@ pub fn main(init: std.process.Init) !void {
 
     if (args.len == 1) {
         state = .Menu;
-    } else if (args.len == 2 and std.mem.eql(u8, args[1], "make")) {
-        state = .Make;
+    } else if (args.len == 2) {
+        state = state_map.get(args[1]) orelse .NoState;
+    } else if (args.len == 3) {
+        state = state_map.get(args[1]) orelse .NoState;
+        build_mode = buildmode_map.get(args[2]) orelse .Invalid;
     } else {
-        state = .Menu;
+        try stdout.writeStreamingAll(io, "Invalid Command, Exiting...\n");
+        return;
     }
 
-    const io = init.io;
 
     try stdout.writeStreamingAll(io, "\x1b[H\x1b[2J");
     try stdout.writeStreamingAll(io, "Welcome to Devin!\n");
@@ -87,8 +90,18 @@ pub fn main(init: std.process.Init) !void {
 
     switch (state) {
         .Menu => try menuState(io, gpa),
-        .Make => try makeState(io, gpa),
-        else => return,
+        .Make => {
+            if (build_mode == .Unset) {
+                try makeState(io, gpa, .Debug);
+            } else if (build_mode == .Invalid) {
+                try stdout.writeStreamingAll(io, "Invalid Command, Exiting...\n");
+                return;
+            } else try makeState(io, gpa, build_mode);
+        },
+        else => {
+            try stdout.writeStreamingAll(io, "Invalid Command, Exiting...\n");
+            return;
+        },
     }
 }
 
