@@ -4,8 +4,9 @@ const stdout = std.Io.File.stdout();
 const stdin = std.Io.File.stdin();
 const cwd = std.Io.Dir.cwd();
 
-const State = enum(u8) {
-    Menu = 0,
+const State = enum(i8) {
+    NoState = -1,
+    Menu,
     Make,
     Tidy,
 };
