@@ -52,6 +52,13 @@ const BuildMode = enum(i8) {
     }
 };
 
+const buildmode_map = std.StaticStringMap(BuildMode).initComptime(.{
+    .{ "debug", .Debug },
+    .{ "safe", .ReleaseSafe },
+    .{ "small", .ReleaseSmall },
+    .{ "fast", .ReleaseFast },
+});
+
 
 pub fn main(init: std.process.Init) !void {
     const gpa = init.gpa;
