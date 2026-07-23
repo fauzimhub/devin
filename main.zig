@@ -62,10 +62,11 @@ var state: State = .NoState;
 
 pub fn main(init: std.process.Init) !void {
     const gpa = init.gpa;
-    const arena = init.arena.allocator();
-    const args = try init.minimal.args.toSlice(arena);
-    std.debug.assert(@intFromEnum(State.Menu) == 0 and
-        @intFromEnum(State.C) == 1);
+    const arena = init.arena;
+    const io = init.io;
+    const args = try init.minimal.args.toSlice(arena.allocator());
+
+    var build_mode: BuildMode = .Unset;
 
     if (args.len == 1) {
         state = .Menu;
