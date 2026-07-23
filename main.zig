@@ -105,9 +105,18 @@ pub fn main(init: std.process.Init) !void {
     }
 }
 
-fn makeState(io: std.Io, allocator: std.mem.Allocator) !void {
-    const argv = &.{ "cmake", "-G", "Ninja", "-S", ".", "-B", "build" };
-    try stdout.writeStreamingAll(io, "Executing CMake using Ninja as build system generator, placing all generated files into build/ directory...\n\n");
+fn makeState(io: std.Io, allocator: std.mem.Allocator, mode: BuildMode) !void {
+    if (std.mem.eql(u8, mode.flags(), "")) return error.UnknownBuildMode;
+    const argv = &.{
+        "cmake",         "-G",         "Ninja",
+        "-S",            ".",          "-B",
+        mode.buildDir(), mode.flags(),
+    };
+
+    try stdout.writeStreamingAll(io, "Executing CMake using Ninja as build system generator, placing all generated files into ");
+    try stdout.writeStreamingAll(io, mode.buildDir());
+    try stdout.writeStreamingAll(io, "/ directory...\n\n");
+
     const cmd_str = try std.mem.join(allocator, " ", argv);
     try stdout.writeStreamingAll(io, cmd_str);
     try stdout.writeStreamingAll(io, "\n\n");
